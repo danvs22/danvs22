@@ -1,0 +1,47 @@
+import pandas as pd
+from IPython.display import display
+
+Funcionarios_df = pd.read_csv(r'CadastroFuncionarios.csv', sep=';', decimal=',')
+Clientes_df = pd.read_csv(r'CadastroClientes.csv', sep=';')
+ServPrestados_df = pd.read_csv(r'BaseServiçosPrestados.csv', sep=';')
+
+Funcionarios_df = Funcionarios_df.drop(['Estado Civil', 'Cargo'], axis=1)
+ServPrestados_df = ServPrestados_df.drop(['Unnamed: 4', 'Unnamed: 5'], axis=1)
+
+display(Funcionarios_df)
+display(Clientes_df)
+display(ServPrestados_df)
+
+#Salário total dos funcionários
+Funcionarios_df['Salario Total'] = Funcionarios_df['Salario Base'] + Funcionarios_df['Impostos'] + Funcionarios_df['Beneficios'] + Funcionarios_df['VT'] + Funcionarios_df['VR']
+print('O salário total dos funcionários é R${:,}'.format(Funcionarios_df['Salario Total'].sum()))
+
+#Faturamento total da empresa
+Faturamento_df = ServPrestados_df[['ID Cliente', 'Tempo Total de Contrato (Meses)']].merge(Clientes_df[['ID Cliente', 'Valor Contrato Mensal']], on='ID Cliente')
+display(Faturamento_df)
+Faturamento_df['Faturamento Total'] = Faturamento_df['Tempo Total de Contrato (Meses)'] * Faturamento_df['Valor Contrato Mensal']
+print('O faturamento total foi R${:,}'.format(Faturamento_df['Faturamento Total'].sum()))
+
+#Porcentagem de Funcionário que fechou algum contrato
+Funcionarios_serv = ServPrestados_df[['ID Funcionário', 'Codigo do Servico']].merge(Funcionarios_df[['Nome Completo', 'ID Funcionário']], on='ID Funcionário')
+Funcionarios_serv = Funcionarios_serv.sort_values('Nome Completo', ascending=True)
+Funcionarios_totais = Funcionarios_df[['ID Funcionário', 'Nome Completo']]
+Funcionarios_serv = len(Funcionarios_serv['ID Funcionário'].unique())
+
+display(Funcionarios_totais)
+Funcionarios_porcent = len(Funcionarios_totais['Nome Completo'])
+
+print('O percentual de funcionaram que fecharam contrato, foi de {:.2%}.'.format(Funcionarios_serv / Funcionarios_porcent))
+
+#Quantidade de contrato fechado por funcionário e por área
+Contrato_area_df = Funcionarios_df[['Nome Completo', 'ID Funcionário', 'Area']].merge(ServPrestados_df['ID Funcionário'], on='ID Funcionário')
+Contrato_area_qte = Contrato_area_df['Area'].value_counts()
+display(Contrato_area_qte)
+
+Contrato_funcionario = Funcionarios_df['Area'].value_counts()
+display(Contrato_funcionario)
+Contrato_funcionario.plot(kind='bar')
+
+#Ticket médio mensal
+Ticket_medio = Clientes_df['Valor Contrato Mensal'].mean()
+print('O valor do ticket médio mensal é de R${:,.2f}.'.format(Ticket_medio))
